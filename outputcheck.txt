@@ -1,0 +1,223 @@
+  
+    if(TMstete == 1) 
+    {
+      Serial.println(F("billdetail"));
+   if(report_id[billbumber] == 0) 
+   {
+          checkbalancestat = 1;
+          moneyupdate = 0; 
+          Serial.println("Bill = 0 Go to check balance");
+         Gethttp2detail = 4;
+          struct sh2lib_handle hd;
+            request_finished = false;
+             Gethttp2detail = 3;
+              if (sh2lib_connect(&hd, http2api) != ESP_OK) {
+                    Serial.println("Error connecting to HTTP2 server");
+                     Gethttp2detail = 2;
+                } 
+
+              Serial.println(F("Connected"));
+      
+                URLhttp2pathB_detail = http2bildetail + report_id[billbumber];
+                 char parthB_Detail[200];
+                  URLhttp2pathB_detail.toCharArray(parthB_Detail, 200);
+
+ const nghttp2_nv nva3[] = { SH2LIB_MAKE_NV(":method", "GET"),
+                              SH2LIB_MAKE_NV(":scheme", "https"),
+                              SH2LIB_MAKE_NV(":path", parthB_Detail),
+                            SH2LIB_MAKE_NV("Host", "mobile-api-gateway.truemoney.com"),
+                              SH2LIB_MAKE_NV("Content-Type", "application/x-www-form-urlencoded"), 
+                              SH2LIB_MAKE_NV("User-Agent", "okhttp/3.12.0"),           
+                             SH2LIB_MAKE_NV("Authorization", Authorizationtoken)
+                           };
+ Serial.println(parthB_Detail);
+sh2lib_do_get_with_nv(&hd, nva, sizeof(nva) / sizeof(nva[0]), handle_POST_response); ////get
+vTaskDelay(300);
+  while (1) {
+    if (sh2lib_execute(&hd) != ESP_OK) {
+      Serial.println(F("Error GETDetail"));
+      Gethttp2detail = 2;
+      break;
+    }
+    if (request_finished) {
+       vTaskDelay(1000);
+DynamicJsonDocument doc(2048);
+deserializeJson(doc, datadetailhttp2);
+JsonObject obj = doc.as<JsonObject>();
+String checkcode = obj["code"];
+String massageJson = obj["data"]["personal_message"]["value"];
+String amountJson = obj["data"]["amount"];
+String PhoneJson = obj["data"]["ref1"];
+String nameJson = obj["data"]["section2"]["column1"]["cell2"]["value"];
+txsendername=nameJson;
+txsenderphone=PhoneJson;
+txamount=amountJson;
+txmessage=massageJson;
+ if(checkcode != "UPC-200")
+                  {                
+                          Serial.println (F ("=======bill detail==go to login tokenfail!!!!================="));
+                         vTaskDelay(1);
+                          ESP.restart();
+                  }
+     
+      datadetailhttp2 = "";
+      Gethttp2detail = 1;
+Serial.println(txsendername);
+Serial.println(txsenderphone);
+Serial.println(txamount);
+Serial.println(txmessage);
+     }
+  break;
+    }
+    vTaskDelay(10);
+  }
+  sh2lib_free(&hd);
+
+Dwait :
+
+if(Gethttp2detail == 1)
+{
+ 
+  Serial.println("ok full goto tmstate");
+ //TMstete = 1;
+}else if(Gethttp2detail == 0){
+      // Serial.println("Gethttp2money-0");
+       vTaskDelay(50);
+       goto Dwait;
+     }else if(Gethttp2detail == 2){
+       watcdog++;
+              if(watcdog < 3){
+                           vTaskDelay(1000);
+                         goto errordetail;
+                            }
+                             Serial.println(F("watcdog > 3 RESTART"));
+                            return;
+                          }else if(Gethttp2detail == 3){
+                           // if(checkbalancestat == 0) goto balance0; 
+                              vTaskDelay(100);
+                               goto Dwait;
+                                    }else if(Gethttp2detail == 4){
+                              goto NoUpdate;
+                              
+                                    }
+
+                                    
+         for(int De = 0; De < 6; De++) {
+          
+             if (reportok[De] == 1)
+             {
+               vTaskDelay(50);
+               
+                
+             Serial.println(checkbills);
+            billbumber = De; 
+      ////getdetail       
+  
+    int watcdog = 0;
+       errordetail:
+//Gethttp2detail
+//// test newget
+          
+//Serial.println(F("nobill++ 00:00 PM"));
+    
+
+                  
+             } ///// loop
+
+    //  tmaleart();
+      TMstete = 0;
+       
+    }
+*/ 
+
+
+#include 
+
+TaskHandle_t TaskHandle_1;
+TaskHandle_t TaskHandle_2;
+TaskHandle_t TaskHandle_3;
+
+char ptrTaskList[250];
+
+void setup()
+{  
+    Serial.begin(9600);
+    Serial.println(F("In Setup function"));
+
+    /* Use INT0(pin2) falling edge interrupt for resuming tasks */
+    attachInterrupt(digitalPinToInterrupt(2), ExternalInterrupt, FALLING); 
+
+    /* Create a task with priority 3. Capture the Task details to its handler*/
+    xTaskCreate(MyTask1, "Task1", 120, NULL, 1, &TaskHandle_1);
+    xTaskCreate(MyTask2, "Task2", 120, NULL, 2, &TaskHandle_2);  
+    xTaskCreate(MyTask3, "Task3", 120, NULL, 3, &TaskHandle_3);
+}
+
+void loop()
+{
+    // Hooked to IDle task, it will run whenever CPU is idle
+    Serial.println(F("Loop function"));
+    delay(1000);
+}
+
+/* 
+ *  Task info(state, Priority, Stack available) is read immediately the switch is pressed and sent on Serial Port
+ *  Serial data is printed in ISR for demonstarting the control flow. This should not be done as it takes long time to send data on Serial port.
+ *  Taking to much ISR time will starve the other tasks or User application.  *  
+ */
+static void ExternalInterrupt()
+{
+    vTaskList(ptrTaskList);
+    Serial.println(F("**********************************"));
+    Serial.println(F("Task  State   Prio    Stack    Num")); 
+    Serial.println(F("**********************************"));
+    Serial.print(ptrTaskList);
+    Serial.println(F("**********************************"));
+}
+
+/* Task1 with priority 1 */
+static void MyTask1(void* pvParameters)
+{
+    while(1)
+    {
+        Serial.println(F("Task1 Running"));
+        delay(200);
+        vTaskDelay(250/portTICK_PERIOD_MS);
+    }
+}
+
+/* Task2 with priority 2 */
+static void MyTask2(void* pvParameters)
+{
+    while(1)
+    {    
+        Serial.println(F("Task2 Running"));
+        delay(200);
+        vTaskDelay(300/portTICK_PERIOD_MS);
+    }
+}
+
+/* Task3 with priority 3 */
+static void MyTask3(void* pvParameters)
+{
+    char suspendFlag=0;
+    while(1)
+    {    
+        Serial.println(F("Task3 Running"));
+
+        if(suspendFlag==1)                 //Task1 is suspended and resumed alternatively whenever Task3 runs.
+        {
+            vTaskSuspend(TaskHandle_1);
+            suspendFlag = 0;
+        }
+        else
+        {
+            vTaskResume(TaskHandle_1);
+            suspendFlag = 1;
+        }
+        delay(200);
+        vTaskDelay(400/portTICK_PERIOD_MS);
+    }
+}
+
+Add TipAsk QuestionComment
